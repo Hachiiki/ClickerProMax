@@ -1,0 +1,240 @@
+#include "clickerengine.h"
+#include <QDebug>
+
+#include <cstdlib>
+#include <ctime>
+
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#endif
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+ClickerEngine::ClickerEngine(QObject* parent)
+    : QObject(parent)
+{
+    srand(static_cast<unsigned>(time(nullptr)));  // Seed random for anti-detection
+    m_timer = new QTimer(this);
+    m_timer->setSingleShot(true);
+    connect(m_timer, &QTimer::timeout, this, &ClickerEngine::tick);
+}
+
+ClickerEngine::~ClickerEngine()
+{
+    stop();
+}
+
+void ClickerEngine::setPoints(const QVector<ClickPoint>& pts)
+{
+    m_points = pts;
+}
+
+void ClickerEngine::setStopCondition(StopCondition cond, int value)
+{
+    m_stopCond = cond;
+    if (cond == StopCondition::TimeLimit)  m_timeLimitMs = static_cast<qint64>(value) * 1000;
+    if (cond == StopCondition::CycleCount) m_maxCycles   = value;
+}
+
+// ── Public start / stop ───────────────────────────────────────────────────────
+
+void ClickerEngine::start()
+{
+    if (m_running || m_points.isEmpty()) {
+        if (m_points.isEmpty())
+            emit statusMessage("No points to click. Add points first.");
+        return;
+    }
+
+#ifdef Q_OS_WIN
+    // CRITICAL: Ensure Roblox window is focused before starting clicks
+    POINT pt;
+    GetCursorPos(&pt);
+    HWND hwnd = WindowFromPoint(pt);
+    if (hwnd) {
+        // Set the window as foreground (active) window
+        SetForegroundWindow(hwnd);
+        Sleep(100);  // Give it time to activate
+    }
+#endif
+
+    m_running      = true;
+    m_currentIndex = 0;
+    m_cycleCount   = 0;
+    m_elapsed.start();
+
+    emit started();
+    emit statusMessage("Running...");
+
+    // Fire immediately – click the first point without waiting
+    tick();
+}
+
+void ClickerEngine::stop()
+{
+    if (!m_running) return;
+    m_running = false;
+    m_timer->stop();
+    emit stopped("User stopped");
+    emit statusMessage("Stopped.");
+}
+
+// ── Internal loop ─────────────────────────────────────────────────────────────
+
+void ClickerEngine::tick()
+{
+    if (!m_running) return;
+
+    // ── Check time-limit stop condition ──
+    if (m_stopCond == StopCondition::TimeLimit &&
+        m_elapsed.elapsed() >= m_timeLimitMs)
+    {
+        m_running = false;
+        emit stopped("Time limit reached");
+        emit statusMessage(QString("Stopped: time limit of %1 s reached.")
+                           .arg(m_timeLimitMs / 1000));
+        return;
+    }
+
+    if (m_points.isEmpty()) { stop(); return; }
+
+    // ── Click the current point ───────────────────────────────────────────────
+    const ClickPoint& pt = m_points[m_currentIndex];
+    doClick(pt.position.x(), pt.position.y());
+    emit currentPointChanged(m_currentIndex);
+    emit statusMessage(QString("Clicked point %1 / %2   (cycle %3)")
+                       .arg(m_currentIndex + 1)
+                       .arg(m_points.size())
+                       .arg(m_cycleCount + 1));
+
+    // ── Advance index, detect cycle wrap ─────────────────────────────────────
+    const int delay     = pt.delayMs;   // delay belongs to the point we just clicked
+    const int nextIndex = (m_currentIndex + 1) % m_points.size();
+
+    if (nextIndex == 0) {
+        m_cycleCount++;
+        emit cycleCompleted(m_cycleCount);
+
+        if (m_stopCond == StopCondition::CycleCount &&
+            m_cycleCount >= m_maxCycles)
+        {
+            m_running = false;
+            emit stopped(QString("Completed %1 cycles").arg(m_cycleCount));
+            emit statusMessage(QString("Stopped: completed %1 cycle(s).").arg(m_cycleCount));
+            return;
+        }
+    }
+
+    m_currentIndex = nextIndex;
+
+    // ── Schedule the next click after this point's delay ─────────────────────
+    m_timer->start(delay);
+}
+
+// ── Helper: convert screen pixel coords to absolute normalised (0 – 65535) ──
+
+#ifdef Q_OS_WIN
+static void screenToNorm(int x, int y, LONG& nx, LONG& ny)
+{
+    int sw = GetSystemMetrics(SM_CXSCREEN);
+    int sh = GetSystemMetrics(SM_CYSCREEN);
+    nx = static_cast<LONG>((x * 65536 + sw / 2) / sw);
+    ny = static_cast<LONG>((y * 65536 + sh / 2) / sh);
+}
+
+// Helper: build and send a single INPUT struct
+static void sendMouseInput(DWORD flags, LONG nx, LONG ny)
+{
+    INPUT inp = {};
+    inp.type           = INPUT_MOUSE;
+    inp.mi.dx          = nx;
+    inp.mi.dy          = ny;
+    inp.mi.dwFlags     = flags;
+    inp.mi.time        = 0;
+    inp.mi.dwExtraInfo = 0;
+    SendInput(1, &inp, sizeof(INPUT));
+}
+#endif
+
+// ── Human-like mouse movement helper ──────────────────────────────────────────
+
+int ClickerEngine::getRandomVariation(int variance)
+{
+    // Returns random value between -variance and +variance
+    return (rand() % (variance * 2 + 1)) - variance;
+}
+
+void ClickerEngine::humanLikeMovement(int targetX, int targetY)
+{
+#ifdef Q_OS_WIN
+    LONG nx, ny;
+
+    // 1) Small "jiggle" – move a few pixels away from the target first.
+    //    This forces Roblox to fire a new mouse-enter / hover event even if
+    //    the cursor was already on the same spot from a previous cycle.
+    int jiggleX = targetX + 3 + getRandomVariation(2);
+    int jiggleY = targetY + 3 + getRandomVariation(2);
+
+    screenToNorm(jiggleX, jiggleY, nx, ny);
+    sendMouseInput(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, nx, ny);
+    Sleep(8 + getRandomVariation(5));
+
+    // 2) Move to the exact target – this SendInput MOUSEMOVE is what makes
+    //    Roblox update its hover state (changes cursor → 👆🏻).
+    screenToNorm(targetX, targetY, nx, ny);
+    sendMouseInput(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, nx, ny);
+    Sleep(15 + getRandomVariation(10));      // let Roblox process the move
+
+    m_lastMouseX = targetX;
+    m_lastMouseY = targetY;
+#endif
+}
+
+// ── Platform mouse injection with anti-detection ────────────────────────────────
+
+void ClickerEngine::doClick(int x, int y)
+{
+#ifdef Q_OS_WIN
+    // CRITICAL: Ensure the window at target is focused BEFORE each click
+    POINT pt = { x, y };
+    HWND hwnd = WindowFromPoint(pt);
+    if (hwnd) {
+        SetForegroundWindow(hwnd);
+        Sleep(10);
+    }
+
+    // Move the cursor with a proper MOUSEMOVE event so Roblox registers hover
+    humanLikeMovement(x, y);
+
+    Sleep(20 + getRandomVariation(15));  // Random delay before click
+
+    // Convert target to normalised absolute coords for SendInput
+    LONG nx, ny;
+    screenToNorm(x, y, nx, ny);
+
+    // LEFT BUTTON DOWN
+    sendMouseInput(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_ABSOLUTE, nx, ny);
+    Sleep(15 + getRandomVariation(10));  // Variable hold time
+
+    // LEFT BUTTON UP
+    sendMouseInput(MOUSEEVENTF_LEFTUP | MOUSEEVENTF_ABSOLUTE, nx, ny);
+
+    Sleep(10 + getRandomVariation(5));   // Recovery delay after click
+#else
+    // ── Linux / X11 (XTest extension) ────────────────────────────────────────
+    // Requires linking against Xtst:  LIBS += -lX11 -lXtst
+    // and #include <X11/extensions/XTest.h>
+    //
+    // Display* dpy = XOpenDisplay(nullptr);
+    // XTestFakeMotionEvent(dpy, -1, x, y, CurrentTime);
+    // XFlush(dpy);
+    // XTestFakeButtonEvent(dpy, 1, True,  CurrentTime);
+    // XTestFakeButtonEvent(dpy, 1, False, CurrentTime);
+    // XFlush(dpy);
+    // XCloseDisplay(dpy);
+    //
+    // For now just log (remove when enabling XTest):
+    qDebug() << "Click at" << x << y;
+    Q_UNUSED(x); Q_UNUSED(y);
+#endif
+}
