@@ -1,4 +1,4 @@
-# AutoClicker
+# ClickerProMax
 
 A Qt/C++ desktop auto-clicker with numbered screen overlays, per-point delays, configurable stop conditions, and global hotkeys.
 
@@ -14,6 +14,17 @@ A Qt/C++ desktop auto-clicker with numbered screen overlays, per-point delays, c
 | **Stop conditions** | Run indefinitely · Stop after N seconds · Stop after N cycles |
 | **Global hotkey** | Press the configured key (default **F6**) anywhere to toggle start/stop |
 | **Config persistence** | All settings & points auto-saved to JSON in AppData |
+| **System tray integration** | Minimize to tray with context menu for quick settings |
+| **Multiple click patterns** | Normal click mode with configurable engine |
+| **Cross-platform Qt6** | Built with Qt 6.9.3 for modern Windows support |
+
+---
+
+## Download
+
+Download the latest installer from the [Releases page](https://github.com/Hachiiki/ClickerProMax/releases).
+
+**Quick install:** Download `ClickerProMax_Setup.exe` from [v1.0.0 release](https://github.com/Hachiiki/ClickerProMax/releases/tag/v1.0.0) and run it.
 
 ---
 
@@ -21,7 +32,7 @@ A Qt/C++ desktop auto-clicker with numbered screen overlays, per-point delays, c
 
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/msvc2022_64"   # adjust to your Qt path
+cmake .. -DCMAKE_PREFIX_PATH="C:/Qt/6.9.3/mingw_64"
 cmake --build . --config Release
 ```
 
@@ -29,8 +40,8 @@ cmake --build . --config Release
 
 ```bash
 qmake AutoClicker.pro
-# Windows:
-nmake          # or mingw32-make
+# Windows (MinGW):
+mingw32-make
 # Linux/macOS:
 make
 ```
@@ -59,7 +70,7 @@ When the last point is reached the sequence wraps back to Point 1 (one cycle com
 ## Platform notes
 
 ### Windows
-Full support: overlay click-through via `WS_EX_TRANSPARENT`, mouse injection via `SendInput`, global hotkey via `RegisterHotKey`.
+Full support: overlay click-through via `WS_EX_TRANSPARENT`, mouse injection via `SendInput`, global hotkey via `RegisterHotKey`. Built with Qt 6.9.3 and MinGW.
 
 ### Linux
 The `ClickerEngine::doClick()` stub in `clickerengine.cpp` contains commented XTest code. To enable:
@@ -71,3 +82,9 @@ The `ClickerEngine::doClick()` stub in `clickerengine.cpp` contains commented XT
 
 ## Config file location
 `%APPDATA%\AutoClicker\AutoClicker\autoclicker_config.json`
+
+---
+
+## Release
+
+Current version: **v1.0.0** - Initial release with installer available on GitHub Releases.
