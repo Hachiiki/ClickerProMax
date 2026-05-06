@@ -10,6 +10,11 @@ QString ConfigManager::defaultConfigPath()
     return AppSettings::instance().configFilePath("autoclicker_config.json");
 }
 
+QString ConfigManager::defaultProConfigPath()
+{
+    return AppSettings::instance().configFilePath("autoclicker_pro_config.json");
+}
+
 bool ConfigManager::save(const AppConfig& cfg, const QString& filePath)
 {
     const QString path = filePath.isEmpty() ? defaultConfigPath() : filePath;

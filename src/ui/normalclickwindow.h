@@ -22,6 +22,8 @@ signals:
 protected:
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     void closeEvent(QCloseEvent*) override;
+    void showEvent(QShowEvent*) override;
+    void hideEvent(QHideEvent*) override;
 
 private slots:
     void onStartStop();
@@ -54,6 +56,7 @@ private:
     static constexpr int kHotkeyToggleId = 9002;
 
     // UI elements
+    QPushButton* m_backBtn = nullptr;
     QSpinBox* m_hrsSpin;
     QSpinBox* m_minsSpin;
     QSpinBox* m_secsSpin;

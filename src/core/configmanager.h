@@ -84,4 +84,5 @@ public:
 
     static QString defaultConfigPath();
     static QString defaultNormalConfigPath();
+    static QString defaultProConfigPath();
 };

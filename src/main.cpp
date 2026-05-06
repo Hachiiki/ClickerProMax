@@ -18,12 +18,18 @@ int main(int argc, char* argv[])
     app.setWindowIcon(QIcon("src/logo/ClickerProMax_256.png"));
 
     HomeWindow home;
-    MainWindow mw;
+    MainWindow mw(false);
+    MainWindow proMw(true);
     NormalClickWindow nw;
 
     QObject::connect(&home, &HomeWindow::openAutoClicker, [&]() {
         home.hide();
         mw.show();
+    });
+
+    QObject::connect(&home, &HomeWindow::openAutoClickerPro, [&]() {
+        home.hide();
+        proMw.show();
     });
 
     QObject::connect(&home, &HomeWindow::openNormalClicker, [&]() {
@@ -33,6 +39,11 @@ int main(int argc, char* argv[])
 
     QObject::connect(&mw, &MainWindow::backRequested, [&]() {
         mw.hide();
+        home.show();
+    });
+
+    QObject::connect(&proMw, &MainWindow::backRequested, [&]() {
+        proMw.hide();
         home.show();
     });
 

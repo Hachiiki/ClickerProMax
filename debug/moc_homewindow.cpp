@@ -42,6 +42,7 @@ template <> constexpr inline auto HomeWindow::qt_create_metaobjectdata<qt_meta_t
         "HomeWindow",
         "openAutoClicker",
         "",
+        "openAutoClickerPro",
         "openNormalClicker",
         "onBrowseConfigDir",
         "onResetConfigDir"
@@ -50,12 +51,14 @@ template <> constexpr inline auto HomeWindow::qt_create_metaobjectdata<qt_meta_t
     QtMocHelpers::UintData qt_methods {
         // Signal 'openAutoClicker'
         QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'openNormalClicker'
+        // Signal 'openAutoClickerPro'
         QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
+        // Signal 'openNormalClicker'
+        QtMocHelpers::SignalData<void()>(4, 2, QMC::AccessPublic, QMetaType::Void),
         // Slot 'onBrowseConfigDir'
-        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'onResetConfigDir'
         QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'onResetConfigDir'
+        QtMocHelpers::SlotData<void()>(6, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -80,16 +83,19 @@ void HomeWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
         case 0: _t->openAutoClicker(); break;
-        case 1: _t->openNormalClicker(); break;
-        case 2: _t->onBrowseConfigDir(); break;
-        case 3: _t->onResetConfigDir(); break;
+        case 1: _t->openAutoClickerPro(); break;
+        case 2: _t->openNormalClicker(); break;
+        case 3: _t->onBrowseConfigDir(); break;
+        case 4: _t->onResetConfigDir(); break;
         default: ;
         }
     }
     if (_c == QMetaObject::IndexOfMethod) {
         if (QtMocHelpers::indexOfMethod<void (HomeWindow::*)()>(_a, &HomeWindow::openAutoClicker, 0))
             return;
-        if (QtMocHelpers::indexOfMethod<void (HomeWindow::*)()>(_a, &HomeWindow::openNormalClicker, 1))
+        if (QtMocHelpers::indexOfMethod<void (HomeWindow::*)()>(_a, &HomeWindow::openAutoClickerPro, 1))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (HomeWindow::*)()>(_a, &HomeWindow::openNormalClicker, 2))
             return;
     }
 }
@@ -113,14 +119,14 @@ int HomeWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 4)
+        if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 4;
+        _id -= 5;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 4)
+        if (_id < 5)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 4;
+        _id -= 5;
     }
     return _id;
 }
@@ -132,8 +138,14 @@ void HomeWindow::openAutoClicker()
 }
 
 // SIGNAL 1
-void HomeWindow::openNormalClicker()
+void HomeWindow::openAutoClickerPro()
 {
     QMetaObject::activate(this, &staticMetaObject, 1, nullptr);
+}
+
+// SIGNAL 2
+void HomeWindow::openNormalClicker()
+{
+    QMetaObject::activate(this, &staticMetaObject, 2, nullptr);
 }
 QT_WARNING_POP

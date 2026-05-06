@@ -53,6 +53,12 @@ private:
     int  m_currentIndex = 0;
     int  m_cycleCount   = 0;
 
+    QStringList m_pendingKeys;
+    int         m_pendingNextDelayMs = 0;
+    double      m_pendingKeyDelaySecs = 0.5;
+
+    void simulateKeyPress(const QString& keyStr);
+
     StopCondition m_stopCond     = StopCondition::Indefinite;
     int           m_maxCycles    = 0;
     qint64        m_timeLimitMs  = 0;

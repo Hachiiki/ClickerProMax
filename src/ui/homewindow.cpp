@@ -33,7 +33,7 @@ void HomeWindow::buildUI()
     QGridLayout* grid = new QGridLayout;
 
     // Multi-Point Card
-    QPushButton* acCard = new QPushButton("Multi-Point AutoClicker\n\nClick here to use", this);
+    QPushButton* acCard = new QPushButton("Multi-Point AutoClicker", this);
     acCard->setMinimumSize(200, 150);
     QFont cf = acCard->font();
     cf.setPointSize(cf.pointSize() + 2);
@@ -42,15 +42,22 @@ void HomeWindow::buildUI()
     grid->addWidget(acCard, 0, 0);
 
     // Normal Clicker Card
-    QPushButton* normalCard = new QPushButton("Normal AutoClicker\n\nClick here to use", this);
+    QPushButton* normalCard = new QPushButton("Normal AutoClicker", this);
     normalCard->setMinimumSize(200, 150);
     normalCard->setFont(cf);
     connect(normalCard, &QPushButton::clicked, this, &HomeWindow::openNormalClicker);
     grid->addWidget(normalCard, 0, 1);
 
+    // Multi-Point Pro Card
+    QPushButton* proCard = new QPushButton("Multi-Point Pro\n(With Macros)", this);
+    proCard->setMinimumSize(200, 150);
+    proCard->setFont(cf);
+    connect(proCard, &QPushButton::clicked, this, &HomeWindow::openAutoClickerPro);
+    grid->addWidget(proCard, 0, 2);
+
     // Padding for grid to keep cards in top-left
     grid->setRowStretch(1, 1);
-    grid->setColumnStretch(2, 1);
+    grid->setColumnStretch(3, 1);
 
     layout->addLayout(grid);
 

@@ -1976,6 +1976,8 @@ debug/mainwindow.o: src/ui/mainwindow.cpp src/ui/mainwindow.h \
 		C:/Qt/6.9.3/mingw_64/include/QtWidgets/QMessageBox \
 		C:/Qt/6.9.3/mingw_64/include/QtWidgets/qmessagebox.h \
 		C:/Qt/6.9.3/mingw_64/include/QtGui/QCloseEvent \
+		C:/Qt/6.9.3/mingw_64/include/QtGui/QShowEvent \
+		C:/Qt/6.9.3/mingw_64/include/QtGui/QHideEvent \
 		C:/Qt/6.9.3/mingw_64/include/QtGui/QScreen \
 		C:/Qt/6.9.3/mingw_64/include/QtGui/QFont \
 		C:/Qt/6.9.3/mingw_64/include/QtCore/QDebug \

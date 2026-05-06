@@ -1,0 +1,20 @@
+Added:
+- "Multi-Point Pro" feature, which adds the ability to macro a string of keys at each point after clicking.
+- Support in `ClickPoint` for storing `actionKeys` and `keyDelaySecs`.
+- Windows API integration for simulating keyboard presses sequentially in `ClickerEngine` (`simulateKeyPress`).
+- A new interactive card in the Home Window to launch the "Multi-Point Pro" environment.
+- An independent configuration file `autoclicker_pro_config.json` via `ConfigManager` to separate Pro saves from Normal Multi-Point saves.
+- "Macro Keys" and "Key Delay" inputs in the "Edit Point" dialog when using Pro Mode.
+
+Fixed:
+- Fixed an issue where the Multi-Point setup overlay (points/circles) was displaying immediately upon opening the app. The overlay correctly only appears when entering the Multi-Click window now.
+- Stopped keybinds from executing globally while the feature interfaces are hidden on the Home Window.
+- Disabled the feature UI "Back" button while auto clicking is active to prevent the engine from clicking the app's own return navigation.
+
+Changed:
+- Passed a `bool isProMode` flag to `MainWindow` and `ConfigManager` to repurpose the multi-point UI layout for the Pro system seamlessly.
+- Removed "Click here to use" text from the feature cards in the Home Interface.
+- Hooked up `ClickerEngine::tick()` to loop gracefully through queues of key presses automatically using a non-blocking `QTimer` delay.
+
+Removed:
+- Removed the `m_overlay->show();` call from the `MainWindow` constructor in `src/ui/mainwindow.cpp`.

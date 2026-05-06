@@ -12,7 +12,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(bool isProMode = false, QWidget* parent = nullptr);
     ~MainWindow() override;
 
 signals:
@@ -71,6 +71,7 @@ private:
     QPushButton* m_removeBtn   = nullptr;
     QPushButton* m_editBtn     = nullptr;
     QPushButton* m_clearBtn    = nullptr;
+    QPushButton* m_backBtn     = nullptr;
     QPushButton* m_upBtn       = nullptr;
     QPushButton* m_downBtn     = nullptr;
     QPushButton* m_startBtn    = nullptr;
@@ -86,6 +87,11 @@ private:
     AppConfig      m_config;
 
     bool m_running = false;
+    bool m_isProMode = false;
+
+    QString configFilePath() const {
+        return m_isProMode ? ConfigManager::defaultProConfigPath() : ConfigManager::defaultConfigPath();
+    }
 
     // Windows hotkey IDs
     static constexpr int kHotkeyToggleId = 9001;

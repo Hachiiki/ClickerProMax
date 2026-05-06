@@ -61,6 +61,7 @@ void ClickerEngine::start()
     m_running      = true;
     m_currentIndex = 0;
     m_cycleCount   = 0;
+    m_pendingKeys.clear();
     m_elapsed.start();
 
     emit started();
@@ -98,6 +99,22 @@ void ClickerEngine::tick()
 
     if (m_points.isEmpty()) { stop(); return; }
 
+    // ── Process pending keys if any ──
+    if (!m_pendingKeys.isEmpty()) {
+        QString key = m_pendingKeys.takeFirst().trimmed();
+        if (!key.isEmpty()) {
+            simulateKeyPress(key);
+            emit statusMessage(QString("Pressed key: %1").arg(key));
+        }
+
+        if (m_pendingKeys.isEmpty()) {
+            m_timer->start(m_pendingNextDelayMs);
+        } else {
+            m_timer->start(static_cast<int>(m_pendingKeyDelaySecs * 1000));
+        }
+        return;
+    }
+
     // ── Click the current point ───────────────────────────────────────────────
     const ClickPoint& pt = m_points[m_currentIndex];
     doClick(pt.position.x(), pt.position.y());
@@ -127,8 +144,20 @@ void ClickerEngine::tick()
 
     m_currentIndex = nextIndex;
 
-    // ── Schedule the next click after this point's delay ─────────────────────
-    m_timer->start(delay);
+    // ── Schedule the next generic action─────────────────────
+    if (!pt.actionKeys.isEmpty()) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        m_pendingKeys = pt.actionKeys.split(',', Qt::SkipEmptyParts);
+#else
+        m_pendingKeys = pt.actionKeys.split(',', QString::SkipEmptyParts);
+#endif
+        m_pendingKeyDelaySecs = pt.keyDelaySecs < 0.5 ? 0.5 : pt.keyDelaySecs;
+        m_pendingNextDelayMs = delay;
+        // Schedule first key press
+        m_timer->start(static_cast<int>(m_pendingKeyDelaySecs * 1000));
+    } else {
+        m_timer->start(delay);
+    }
 }
 
 // ── Helper: convert screen pixel coords to absolute normalised (0 – 65535) ──
@@ -236,5 +265,41 @@ void ClickerEngine::doClick(int x, int y)
     // For now just log (remove when enabling XTest):
     qDebug() << "Click at" << x << y;
     Q_UNUSED(x); Q_UNUSED(y);
+#endif
+}
+
+void ClickerEngine::simulateKeyPress(const QString& keyStr)
+{
+#ifdef Q_OS_WIN
+    QString k = keyStr.trimmed().toUpper();
+    WORD vk = 0;
+    
+    if (k == "SPACE") vk = VK_SPACE;
+    else if (k == "ENTER") vk = VK_RETURN;
+    else if (k == "TAB") vk = VK_TAB;
+    else if (k == "UP") vk = VK_UP;
+    else if (k == "DOWN") vk = VK_DOWN;
+    else if (k == "LEFT") vk = VK_LEFT;
+    else if (k == "RIGHT") vk = VK_RIGHT;
+    else if (k == "SHIFT") vk = VK_SHIFT;
+    else if (k == "CTRL") vk = VK_CONTROL;
+    else if (k == "ALT") vk = VK_MENU;
+    else if (k == "ESC" || k == "ESCAPE") vk = VK_ESCAPE;
+    else if (k.length() == 1) {
+        short scan = VkKeyScanA(k[0].toLatin1());
+        vk = scan & 0xFF;
+    }
+
+    if (vk != 0) {
+        INPUT inp = {};
+        inp.type = INPUT_KEYBOARD;
+        inp.ki.wVk = vk;
+        SendInput(1, &inp, sizeof(INPUT));
+        Sleep(20 + getRandomVariation(10));
+        inp.ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(1, &inp, sizeof(INPUT));
+    }
+#else
+    qDebug() << "Press key:" << keyStr;
 #endif
 }

@@ -36,14 +36,14 @@
 // Construction
 // ─────────────────────────────────────────────────────────────────────────────
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(bool isProMode, QWidget* parent)
+    : QMainWindow(parent), m_isProMode(isProMode)
 {
-    setWindowTitle("AutoClicker");
+    setWindowTitle(m_isProMode ? "Multi-Point Pro AutoClicker" : "AutoClicker");
     setMinimumSize(420, 520);
 
     // Load saved config (ignore failure – defaults are already set)
-    ConfigManager::load(m_config);
+    ConfigManager::load(m_config, configFilePath());
 
     buildUI();
     connectSignals();
@@ -59,11 +59,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_engine, &ClickerEngine::statusMessage,       this, &MainWindow::onStatusMessage);
 
     refreshPointList();
-    registerHotkey();
 
     // Show stop-condition summary
     onStatusMessage("Ready.");
-    m_overlay->show();
 }
 
 MainWindow::~MainWindow()
@@ -90,17 +88,17 @@ void MainWindow::buildUI()
         titleFont.setPointSize(titleFont.pointSize() + 2);
         titleFont.setBold(true);
 
-        QPushButton* backBtn = new QPushButton("← Back", this);
-        connect(backBtn, &QPushButton::clicked, this, &MainWindow::backRequested);
+        m_backBtn = new QPushButton("← Back", this);
+        connect(m_backBtn, &QPushButton::clicked, this, &MainWindow::backRequested);
 
-        QLabel* title = new QLabel("AutoClicker", this);
+        QLabel* title = new QLabel(m_isProMode ? "Multi-Point Pro" : "AutoClicker", this);
         title->setFont(titleFont);
 
         m_hotkeyLbl = new QLabel(this);
         m_condLbl   = new QLabel(this);
 
         QHBoxLayout* headerRow = new QHBoxLayout;
-        headerRow->addWidget(backBtn);
+        headerRow->addWidget(m_backBtn);
         headerRow->addWidget(title);
         headerRow->addStretch();
         headerRow->addWidget(m_condLbl);
@@ -279,9 +277,30 @@ void MainWindow::onEditPoint()
     QLineEdit* labelEdit = new QLineEdit(pt.label, &dlg);
     labelEdit->setPlaceholderText("optional label");
 
+    QLineEdit* keysEdit = nullptr;
+    QSpinBox* keyDelaySpin = nullptr;
+    if (m_isProMode) {
+        keysEdit = new QLineEdit(pt.actionKeys, &dlg);
+        keysEdit->setPlaceholderText("e.g. A, B, Space");
+
+        keyDelaySpin = new QSpinBox(&dlg);
+        keyDelaySpin->setRange(500, 60000);
+        keyDelaySpin->setValue(pt.keyDelaySecs * 1000);
+        keyDelaySpin->setSuffix(" ms");
+        keyDelaySpin->setToolTip("Delay between individual key presses.");
+    }
+
     form->addRow("Position:", posLabel);
     form->addRow("Delay after click:", delaySpin);
     form->addRow("Label:", labelEdit);
+    
+    if (m_isProMode) {
+        form->addRow("Macro Keys:", keysEdit);
+        form->addRow("Key Delay:", keyDelaySpin);
+        dlg.setFixedSize(300, 220); // slightly larger if we show keys
+    } else {
+        dlg.setFixedSize(300, 160);
+    }
 
     QDialogButtonBox* bb =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
@@ -293,6 +312,10 @@ void MainWindow::onEditPoint()
     if (dlg.exec() == QDialog::Accepted) {
         pt.delayMs = delaySpin->value();
         pt.label   = labelEdit->text();
+        if (m_isProMode && keysEdit && keyDelaySpin) {
+            pt.actionKeys = keysEdit->text();
+            pt.keyDelaySecs = keyDelaySpin->value() / 1000.0;
+        }
         refreshPointList();
     }
 }
@@ -519,6 +542,9 @@ void MainWindow::refreshPointList()
                        .arg(pt.position.x())
                        .arg(pt.position.y())
                        .arg(pt.delayMs);
+        if (m_isProMode && !pt.actionKeys.isEmpty()) {
+            text += QString("  [Keys: %1]").arg(pt.actionKeys);
+        }
         if (!pt.label.isEmpty())
             text += QString("   \"%1\"").arg(pt.label);
         m_pointList->addItem(text);
@@ -535,6 +561,7 @@ void MainWindow::setRunning(bool running)
 {
     m_running = running;
     m_startBtn->setText(running ? "⏹  Stop" : "▶  Start");
+    if (m_backBtn) m_backBtn->setEnabled(!running);
     m_addBtn->setEnabled(!running);
     m_removeBtn->setEnabled(!running);
     m_editBtn->setEnabled(!running);
@@ -596,7 +623,7 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
 
 void MainWindow::onSaveConfig()
 {
-    if (ConfigManager::save(m_config))
+    if (ConfigManager::save(m_config, configFilePath()))
         m_statusLbl->setText("Configuration saved.");
     else
         m_statusLbl->setText("Failed to save configuration!");
@@ -613,11 +640,17 @@ void MainWindow::closeEvent(QCloseEvent* event)
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    if (!this->isMinimized()) {
+        registerHotkey();
+    }
     m_overlay->show();
 }
 
 void MainWindow::hideEvent(QHideEvent* event)
 {
     QMainWindow::hideEvent(event);
+    if (!this->isMinimized()) {
+        unregisterHotkey();
+    }
     m_overlay->hide();
 }

@@ -12,6 +12,7 @@ public:
 
 signals:
     void openAutoClicker();
+    void openAutoClickerPro();
     void openNormalClicker();
 
 private slots:

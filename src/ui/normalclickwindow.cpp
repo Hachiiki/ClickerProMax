@@ -39,7 +39,6 @@ NormalClickWindow::NormalClickWindow(QWidget* parent) : QMainWindow(parent)
     connectSignals();
     loadConfigtoUI();
 
-    registerHotkey();
     onStatusMessage("Ready.");
 }
 
@@ -59,8 +58,8 @@ void NormalClickWindow::buildUI()
 
     // Header
     {
-        QPushButton* backBtn = new QPushButton("← Back", this);
-        connect(backBtn, &QPushButton::clicked, this, &NormalClickWindow::backRequested);
+        m_backBtn = new QPushButton("← Back", this);
+        connect(m_backBtn, &QPushButton::clicked, this, &NormalClickWindow::backRequested);
         
         QLabel* title = new QLabel("Normal AutoClicker", this);
         QFont tf = title->font();
@@ -69,7 +68,7 @@ void NormalClickWindow::buildUI()
         title->setFont(tf);
 
         QHBoxLayout* hl = new QHBoxLayout;
-        hl->addWidget(backBtn);
+        hl->addWidget(m_backBtn);
         hl->addWidget(title);
         hl->addStretch();
         root->addLayout(hl);
@@ -272,6 +271,7 @@ void NormalClickWindow::setRunning(bool running)
     m_running = running;
     m_startBtn->setEnabled(!running);
     m_stopBtn->setEnabled(running);
+    if (m_backBtn) m_backBtn->setEnabled(!running);
     m_saveBtn->setEnabled(!running);
     m_settingsBtn->setEnabled(!running);
     
@@ -405,4 +405,20 @@ void NormalClickWindow::closeEvent(QCloseEvent* event)
     unregisterHotkey();
     m_overlay->hide();
     event->accept();
+}
+
+void NormalClickWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    if (!this->isMinimized()) {
+        registerHotkey();
+    }
+}
+
+void NormalClickWindow::hideEvent(QHideEvent* event)
+{
+    QMainWindow::hideEvent(event);
+    if (!this->isMinimized()) {
+        unregisterHotkey();
+    }
 }
