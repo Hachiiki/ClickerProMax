@@ -11,28 +11,7 @@
 #  include <windows.h>
 #endif
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-OverlayWindow::OverlayWindow(QWidget* parent)
-    : QWidget(parent)
-{
-    // Frameless + always on top + tool (no taskbar entry)
-    setWindowFlags(Qt::FramelessWindowHint
-                   | Qt::WindowStaysOnTopHint
-                   | Qt::Tool);
-
-    // Translucent background so unpainted areas are fully transparent
-    setAttribute(Qt::WA_TranslucentBackground);
-
-    // Never steal focus from other windows
-    setAttribute(Qt::WA_ShowWithoutActivating);
-    setFocusPolicy(Qt::StrongFocus); // needed to receive key events in capture mode
-
-    coverAllScreens();
-    applyClickThrough(true);
-}
-
-// ── Public interface ──────────────────────────────────────────────────────────
+// Public interface
 
 void OverlayWindow::setPoints(const QVector<ClickPoint>& points)
 {
@@ -66,14 +45,14 @@ void OverlayWindow::exitCaptureMode()
     update();
 }
 
-// ── Painting ─────────────────────────────────────────────────────────────────
+// Painting
 
 void OverlayWindow::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // ── Capture-mode overlay ─────────────────────────────────────────────────
+    // Capture-mode overlay
     if (m_captureMode) {
         p.fillRect(rect(), QColor(0, 0, 0, 55));   // subtle dim
 
@@ -87,7 +66,7 @@ void OverlayWindow::paintEvent(QPaintEvent*)
                    "Click anywhere to place a point   |   ESC to cancel");
     }
 
-    // ── Click-point circles ───────────────────────────────────────────────────
+    // Click-point circles
     const int R = kRadius;
     QFont numFont("Segoe UI", 10, QFont::Bold);
     QFont delayFont("Segoe UI", 7);
@@ -140,7 +119,7 @@ void OverlayWindow::paintEvent(QPaintEvent*)
     }
 }
 
-// ── Mouse / keyboard events ───────────────────────────────────────────────────
+// Mouse / keyboard events
 
 void OverlayWindow::mousePressEvent(QMouseEvent* event)
 {
@@ -171,7 +150,7 @@ void OverlayWindow::keyPressEvent(QKeyEvent* event)
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 void OverlayWindow::coverAllScreens()
 {

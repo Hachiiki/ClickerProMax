@@ -4,6 +4,21 @@
 #include "ui/homewindow.h"
 #include "ui/normalclickwindow.h"
 
+/**
+ * @brief Application entry point
+ * @details Creates the QApplication and initializes three main windows:
+ *   - HomeWindow: Menu for selecting automation mode
+ *   - MainWindow (standard): Multi-point sequence mode
+ *   - MainWindow (pro): Advanced/pro multi-point mode
+ *   - NormalClickWindow: Simple timed clicking mode
+ *
+ * Connects signals between windows to enable navigation between modes.
+ * Sets application metadata and high-DPI support.
+ *
+ * @param argc Command-line argument count
+ * @param argv Command-line arguments
+ * @return Application exit code
+ */
 int main(int argc, char* argv[])
 {
     // High-DPI support (Qt5 style – harmless on Qt6)

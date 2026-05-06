@@ -5,6 +5,10 @@
 #  include <windows.h>
 #endif
 
+/**
+ * @brief Constructor - initializes timer for clicking
+ * @details Sets up a single-shot QTimer for controlling click intervals
+ */
 NormalClickerEngine::NormalClickerEngine(QObject* parent) : QObject(parent)
 {
     m_timer = new QTimer(this);
@@ -12,16 +16,28 @@ NormalClickerEngine::NormalClickerEngine(QObject* parent) : QObject(parent)
     connect(m_timer, &QTimer::timeout, this, &NormalClickerEngine::tick);
 }
 
+/**
+ * @brief Destructor - ensures clicking is stopped before cleanup
+ */
 NormalClickerEngine::~NormalClickerEngine()
 {
     stop();
 }
 
+/**
+ * @brief Updates the clicking configuration
+ * @param config New configuration with timing, button type, and position settings
+ */
 void NormalClickerEngine::setConfig(const NormalAppConfig& config)
 {
     m_config = config;
 }
 
+/**
+ * @brief Begins the clicking sequence
+ * @details Validates that interval is non-zero, initializes state, emits started(),
+ * and schedules the first click
+ */
 void NormalClickerEngine::start()
 {
     if (m_running) return;
@@ -43,6 +59,10 @@ void NormalClickerEngine::start()
     tick();
 }
 
+/**
+ * @brief Halts the clicking sequence immediately
+ * @details Stops the timer, sets running flag to false, and emits stopped() signal
+ */
 void NormalClickerEngine::stop()
 {
     if (!m_running) return;
@@ -72,6 +92,12 @@ static void sendSingleInput(DWORD flags, LONG nx, LONG ny)
 }
 #endif
 
+/**
+ * @brief Executes a single mouse click at the configured location
+ * @details Determines target position (current cursor or pre-selected),
+ * converts to normalized screen coordinates, and sends appropriate
+ * mouse input events to the Windows API (left/right/middle, single/double)
+ */
 void NormalClickerEngine::doClick()
 {
 #ifdef Q_OS_WIN
@@ -108,6 +134,11 @@ void NormalClickerEngine::doClick()
 #endif
 }
 
+/**
+ * @brief Timer callback - executes next click and schedules the following one
+ * @details Checks repeat limit, performs a click, increments counter,
+ * emits status signals, and schedules next iteration
+ */
 void NormalClickerEngine::tick()
 {
     if (!m_running) return;

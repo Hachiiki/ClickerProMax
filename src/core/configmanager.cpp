@@ -5,16 +5,32 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+/**
+ * @brief Gets the default config file path for multi-point automation mode
+ * @return Absolute path to "autoclicker_config.json" in the config directory
+ */
 QString ConfigManager::defaultConfigPath()
 {
     return AppSettings::instance().configFilePath("autoclicker_config.json");
 }
 
+/**
+ * @brief Gets the default config file path for Pro/Advanced automation mode
+ * @return Absolute path to "autoclicker_pro_config.json" in the config directory
+ */
 QString ConfigManager::defaultProConfigPath()
 {
     return AppSettings::instance().configFilePath("autoclicker_pro_config.json");
 }
 
+/**
+ * @brief Serializes an AppConfig to JSON and writes it to disk
+ * @details Converts the configuration snapshot (points, stop conditions, hotkey)
+ * to indented JSON format for human readability and debugging.
+ * @param cfg The AppConfig to save
+ * @param filePath Optional custom file path; uses defaultConfigPath() if empty
+ * @return True if write succeeded, false if file operations failed
+ */
 bool ConfigManager::save(const AppConfig& cfg, const QString& filePath)
 {
     const QString path = filePath.isEmpty() ? defaultConfigPath() : filePath;
@@ -47,6 +63,14 @@ bool ConfigManager::save(const AppConfig& cfg, const QString& filePath)
     return true;
 }
 
+/**
+ * @brief Loads an AppConfig from a JSON file on disk
+ * @details Reads and parses JSON, reconstructs all ClickPoints, stop conditions,
+ * and hotkey settings. Gracefully handles missing fields with sensible defaults.
+ * @param cfg Output parameter; populated with loaded configuration
+ * @param filePath Optional custom file path; uses defaultConfigPath() if empty
+ * @return True if load succeeded, false if file doesn't exist or JSON is malformed
+ */
 bool ConfigManager::load(AppConfig& cfg, const QString& filePath)
 {
     const QString path = filePath.isEmpty() ? defaultConfigPath() : filePath;
@@ -84,11 +108,24 @@ bool ConfigManager::load(AppConfig& cfg, const QString& filePath)
     return true;
 }
 
+/**
+ * @brief Gets the default config file path for simple/normal automation mode
+ * @details Normal mode is simpler than multi-point mode (single location, timed clicks)
+ * @return Absolute path to "autoclicker_normal_config.json" in the config directory
+ */
 QString ConfigManager::defaultNormalConfigPath()
 {
     return AppSettings::instance().configFilePath("autoclicker_normal_config.json");
 }
 
+/**
+ * @brief Saves a NormalAppConfig (simple mode configuration) to JSON
+ * @details Serializes timing, button type, click type, position, and hotkey
+ * to disk in indented JSON format.
+ * @param cfg The NormalAppConfig to save
+ * @param filePath Optional custom file path; uses defaultNormalConfigPath() if empty
+ * @return True if write succeeded, false on file operation failure
+ */
 bool ConfigManager::saveNormal(const NormalAppConfig& cfg, const QString& filePath)
 {
     const QString path = filePath.isEmpty() ? defaultNormalConfigPath() : filePath;
@@ -122,6 +159,14 @@ bool ConfigManager::saveNormal(const NormalAppConfig& cfg, const QString& filePa
     return true;
 }
 
+/**
+ * @brief Loads a NormalAppConfig (simple mode configuration) from a JSON file
+ * @details Reconstructs all timing parameters, button/click types, position info,
+ * and hotkey. Provides sensible defaults for any missing fields.
+ * @param cfg Output parameter; populated with loaded normal mode config
+ * @param filePath Optional custom file path; uses defaultNormalConfigPath() if empty
+ * @return True if load succeeded, false if file doesn't exist or JSON is invalid
+ */
 bool ConfigManager::loadNormal(NormalAppConfig& cfg, const QString& filePath)
 {
     const QString path = filePath.isEmpty() ? defaultNormalConfigPath() : filePath;

@@ -8,10 +8,12 @@
 #  include <windows.h>
 #endif
 
-// ─────────────────────────────────────────────────────────────────────────────
-
+/**
+ * @brief Constructor - initializes timer and random seed
+ * @details Sets up a single-shot QTimer for controlling inter-click delays.
+ * Seeds the random number generator for anti-detection humanization.
+ */
 ClickerEngine::ClickerEngine(QObject* parent)
-    : QObject(parent)
 {
     srand(static_cast<unsigned>(time(nullptr)));  // Seed random for anti-detection
     m_timer = new QTimer(this);
@@ -19,16 +21,27 @@ ClickerEngine::ClickerEngine(QObject* parent)
     connect(m_timer, &QTimer::timeout, this, &ClickerEngine::tick);
 }
 
+/**
+ * @brief Destructor - ensures clicking is stopped before cleanup
+ */
 ClickerEngine::~ClickerEngine()
 {
     stop();
 }
 
+/**
+ * @brief Updates the point sequence to be executed
+ */
 void ClickerEngine::setPoints(const QVector<ClickPoint>& pts)
 {
     m_points = pts;
 }
 
+/**
+ * @brief Configures the stop condition and its parameters
+ * @param cond Type of stop condition (Indefinite, TimeLimit, CycleCount)
+ * @param value Associated value - seconds for TimeLimit, count for CycleCount
+ */
 void ClickerEngine::setStopCondition(StopCondition cond, int value)
 {
     m_stopCond = cond;
@@ -36,8 +49,11 @@ void ClickerEngine::setStopCondition(StopCondition cond, int value)
     if (cond == StopCondition::CycleCount) m_maxCycles   = value;
 }
 
-// ── Public start / stop ───────────────────────────────────────────────────────
-
+/**
+ * @brief Begins the automated clicking sequence
+ * @details Initializes execution state, ensures window focus, and triggers
+ * the first click immediately. Emits started() signal and begins the timer loop.
+ */
 void ClickerEngine::start()
 {
     if (m_running || m_points.isEmpty()) {
@@ -71,6 +87,10 @@ void ClickerEngine::start()
     tick();
 }
 
+/**
+ * @brief Halts the clicking sequence immediately
+ * @details Stops the timer, sets running flag to false, and emits stopped() signal.
+ */
 void ClickerEngine::stop()
 {
     if (!m_running) return;
@@ -80,13 +100,17 @@ void ClickerEngine::stop()
     emit statusMessage("Stopped.");
 }
 
-// ── Internal loop ─────────────────────────────────────────────────────────────
-
+/**
+ * @brief Internal timer callback - executes one click iteration
+ * @details Checks stop conditions, processes the current point click,
+ * handles pending keyboard actions, and schedules the next iteration.
+ * Emits currentPointChanged() and cycleCompleted() signals as appropriate.
+ */
 void ClickerEngine::tick()
 {
     if (!m_running) return;
 
-    // ── Check time-limit stop condition ──
+    // Check time-limit stop condition
     if (m_stopCond == StopCondition::TimeLimit &&
         m_elapsed.elapsed() >= m_timeLimitMs)
     {
@@ -99,7 +123,7 @@ void ClickerEngine::tick()
 
     if (m_points.isEmpty()) { stop(); return; }
 
-    // ── Process pending keys if any ──
+    // Process pending keys if any
     if (!m_pendingKeys.isEmpty()) {
         QString key = m_pendingKeys.takeFirst().trimmed();
         if (!key.isEmpty()) {
@@ -115,7 +139,7 @@ void ClickerEngine::tick()
         return;
     }
 
-    // ── Click the current point ───────────────────────────────────────────────
+    // Click the current point
     const ClickPoint& pt = m_points[m_currentIndex];
     doClick(pt.position.x(), pt.position.y());
     emit currentPointChanged(m_currentIndex);
@@ -124,7 +148,7 @@ void ClickerEngine::tick()
                        .arg(m_points.size())
                        .arg(m_cycleCount + 1));
 
-    // ── Advance index, detect cycle wrap ─────────────────────────────────────
+    // Advance index, detect cycle wrap
     const int delay     = pt.delayMs;   // delay belongs to the point we just clicked
     const int nextIndex = (m_currentIndex + 1) % m_points.size();
 
@@ -144,7 +168,7 @@ void ClickerEngine::tick()
 
     m_currentIndex = nextIndex;
 
-    // ── Schedule the next generic action─────────────────────
+    // Schedule the next generic action
     if (!pt.actionKeys.isEmpty()) {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         m_pendingKeys = pt.actionKeys.split(',', Qt::SkipEmptyParts);
@@ -160,7 +184,7 @@ void ClickerEngine::tick()
     }
 }
 
-// ── Helper: convert screen pixel coords to absolute normalised (0 – 65535) ──
+// Helper: convert screen pixel coords to absolute normalised (0 – 65535)
 
 #ifdef Q_OS_WIN
 static void screenToNorm(int x, int y, LONG& nx, LONG& ny)
@@ -185,7 +209,7 @@ static void sendMouseInput(DWORD flags, LONG nx, LONG ny)
 }
 #endif
 
-// ── Human-like mouse movement helper ──────────────────────────────────────────
+// Human-like mouse movement helper
 
 int ClickerEngine::getRandomVariation(int variance)
 {
@@ -198,9 +222,7 @@ void ClickerEngine::humanLikeMovement(int targetX, int targetY)
 #ifdef Q_OS_WIN
     LONG nx, ny;
 
-    // 1) Small "jiggle" – move a few pixels away from the target first.
-    //    This forces Roblox to fire a new mouse-enter / hover event even if
-    //    the cursor was already on the same spot from a previous cycle.
+    // Small "jiggle" to force Roblox to fire hover events
     int jiggleX = targetX + 3 + getRandomVariation(2);
     int jiggleY = targetY + 3 + getRandomVariation(2);
 
@@ -208,8 +230,7 @@ void ClickerEngine::humanLikeMovement(int targetX, int targetY)
     sendMouseInput(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, nx, ny);
     Sleep(8 + getRandomVariation(5));
 
-    // 2) Move to the exact target – this SendInput MOUSEMOVE is what makes
-    //    Roblox update its hover state (changes cursor → 👆🏻).
+    // Move to exact target so Roblox updates hover state
     screenToNorm(targetX, targetY, nx, ny);
     sendMouseInput(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, nx, ny);
     Sleep(15 + getRandomVariation(10));      // let Roblox process the move
@@ -219,7 +240,7 @@ void ClickerEngine::humanLikeMovement(int targetX, int targetY)
 #endif
 }
 
-// ── Platform mouse injection with anti-detection ────────────────────────────────
+// Platform mouse injection with anti-detection
 
 void ClickerEngine::doClick(int x, int y)
 {
@@ -250,7 +271,7 @@ void ClickerEngine::doClick(int x, int y)
 
     Sleep(10 + getRandomVariation(5));   // Recovery delay after click
 #else
-    // ── Linux / X11 (XTest extension) ────────────────────────────────────────
+    // Linux / X11 (XTest extension)
     // Requires linking against Xtst:  LIBS += -lX11 -lXtst
     // and #include <X11/extensions/XTest.h>
     //

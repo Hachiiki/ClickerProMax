@@ -5,63 +5,94 @@
 #include "core/clickpoint.h"
 #include "core/configmanager.h"
 
-/*  ClickerEngine
+/**
+ * @class ClickerEngine
+ * @brief Executes multi-point automated clicking sequences
  *
- *  Drives the sequential auto-clicking loop:
+ * Implements a state machine that orchestrates clicking through a list of target points
+ * in sequence. Each point is clicked, then the engine waits for that point's configured
+ * delay before moving to the next point.
  *
- *      click(pt[0])  --[pt[0].delay ms]--> click(pt[1]) --[pt[1].delay ms]--> ...
+ * Timing Model:
+ *   - Uses QTimer (single-shot) for precise inter-click delays
+ *   - After clicking point[i], timer starts with point[i].delayMs
+ *   - Timer fires → click point[i+1] → repeat
+ *   - Includes human-like cursor movement and anti-detection features
  *
- *  One QTimer is used (single-shot). After each click the timer is started
- *  with that point's delay; when it fires the next point is clicked.
+ * Stop Conditions:
+ *   - Indefinite: run until manually stopped
+ *   - TimeLimit: stop after N seconds of execution
+ *   - CycleCount: stop after N complete cycles through all points
+ *
+ * Features:
+ *   - Per-point keyboard action support (type text/keys at each click)
+ *   - Human-like cursor movement with randomization
+ *   - Cycle tracking and status signals for UI updates
+ *   - Windows-specific window focus before starting
  */
 class ClickerEngine : public QObject
 {
     Q_OBJECT
 public:
+    /// Constructs a ClickerEngine instance
     explicit ClickerEngine(QObject* parent = nullptr);
     ~ClickerEngine() override;
 
+    /// Sets the point sequence to be executed
     void setPoints(const QVector<ClickPoint>& pts);
+    /// Configures when the automation should stop (Indefinite, TimeLimit, CycleCount)
     void setStopCondition(StopCondition cond, int value = 0);
 
+    /// Returns true if automation is currently running
     bool isRunning() const { return m_running; }
 
+    /// Begins the click sequence execution
     void start();
+    /// Stops the click sequence immediately
     void stop();
 
 signals:
+    /// Emitted when automation successfully starts
     void started();
+    /// Emitted when automation stops with a reason message
     void stopped(const QString& reason);
-    void currentPointChanged(int index);  // emitted just after a click
+    /// Emitted immediately after a point is clicked with its index
+    void currentPointChanged(int index);
+    /// Emitted after completing one full cycle through all points
     void cycleCompleted(int cycleNum);
+    /// Emitted for status updates (user feedback)
     void statusMessage(const QString& msg);
 
 private slots:
+    /// Timer callback that processes the next click in the sequence
     void tick();
 
 private:
+    /// Simulates a mouse click at the specified screen coordinates
     void doClick(int x, int y);
+    /// Moves cursor smoothly from current position to target with randomization
     void humanLikeMovement(int targetX, int targetY);
-    int  getRandomVariation(int variance);
-
-    QTimer*        m_timer;
-    QElapsedTimer  m_elapsed;
-    int            m_lastMouseX = 0;  // Track last mouse position for movement
-    int            m_lastMouseY = 0;
-
-    QVector<ClickPoint> m_points;
-    int  m_currentIndex = 0;
-    int  m_cycleCount   = 0;
-
-    QStringList m_pendingKeys;
-    int         m_pendingNextDelayMs = 0;
-    double      m_pendingKeyDelaySecs = 0.5;
-
+    /// Generates a random value with a given variance for anti-detection
+    int getRandomVariation(int variance);
+    /// Simulates keyboard key presses (e.g., "A", "Space", "A, B, C")
     void simulateKeyPress(const QString& keyStr);
 
-    StopCondition m_stopCond     = StopCondition::Indefinite;
-    int           m_maxCycles    = 0;
-    qint64        m_timeLimitMs  = 0;
+    QTimer* m_timer;               ///< Single-shot timer for inter-click delays
+    QElapsedTimer m_elapsed;       ///< Tracks total runtime for TimeLimit condition
+    int m_lastMouseX = 0;          ///< Last mouse X position (for movement)
+    int m_lastMouseY = 0;          ///< Last mouse Y position (for movement)
 
-    bool m_running = false;
+    QVector<ClickPoint> m_points;  ///< The sequence of points to click
+    int m_currentIndex = 0;        ///< Index of the next point to click
+    int m_cycleCount = 0;          ///< Number of completed cycles
+
+    QStringList m_pendingKeys;     ///< Queue of pending keyboard actions
+    int m_pendingNextDelayMs = 0;  ///< Delay before executing pending keys
+    double m_pendingKeyDelaySecs = 0.5;  ///< Delay between individual key presses
+
+    StopCondition m_stopCond = StopCondition::Indefinite;  ///< When to stop
+    int m_maxCycles = 0;           ///< Max cycles (if CycleCount condition)
+    qint64 m_timeLimitMs = 0;      ///< Max runtime in ms (if TimeLimit condition)
+
+    bool m_running = false;        ///< Current execution state
 };

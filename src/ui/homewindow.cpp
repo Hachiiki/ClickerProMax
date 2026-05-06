@@ -29,7 +29,7 @@ void HomeWindow::buildUI()
     title->setAlignment(Qt::AlignCenter);
     layout->addWidget(title);
 
-    // ── Feature cards ────────────────────────────────────────────────────────
+    // Feature cards
     QGridLayout* grid = new QGridLayout;
 
     // Multi-Point Card
@@ -61,7 +61,7 @@ void HomeWindow::buildUI()
 
     layout->addLayout(grid);
 
-    // ── Config folder settings ───────────────────────────────────────────────
+    // Config folder settings
     QGroupBox* cfgGrp = new QGroupBox("Config Folder", this);
     QVBoxLayout* cfgVl = new QVBoxLayout(cfgGrp);
 

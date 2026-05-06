@@ -26,15 +26,10 @@
 #  include <windows.h>
 #endif
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 #include "util/hotkey_utils.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Construction
-// ─────────────────────────────────────────────────────────────────────────────
 
 MainWindow::MainWindow(bool isProMode, QWidget* parent)
     : QMainWindow(parent), m_isProMode(isProMode)
@@ -70,9 +65,7 @@ MainWindow::~MainWindow()
     delete m_overlay;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // UI construction
-// ─────────────────────────────────────────────────────────────────────────────
 
 void MainWindow::buildUI()
 {
@@ -82,7 +75,7 @@ void MainWindow::buildUI()
     root->setSpacing(8);
     root->setContentsMargins(10, 10, 10, 10);
 
-    // ── Header labels ────────────────────────────────────────────────────────
+    // Header labels
     {
         QFont titleFont = font();
         titleFont.setPointSize(titleFont.pointSize() + 2);
@@ -106,7 +99,7 @@ void MainWindow::buildUI()
         root->addWidget(m_hotkeyLbl);
     }
 
-    // ── Point list ───────────────────────────────────────────────────────────
+    // Point list
     {
         QGroupBox* grp = new QGroupBox("Click Points (click circles on screen)", this);
         QVBoxLayout* gl = new QVBoxLayout(grp);
@@ -142,7 +135,7 @@ void MainWindow::buildUI()
         root->addWidget(grp);
     }
 
-    // ── Control bar ──────────────────────────────────────────────────────────
+    // Control bar
     {
         QHBoxLayout* ctrl = new QHBoxLayout;
 
@@ -164,7 +157,7 @@ void MainWindow::buildUI()
         root->addLayout(ctrl);
     }
 
-    // ── Status bar ───────────────────────────────────────────────────────────
+    // Status bar
     m_statusLbl = new QLabel("Ready.", this);
     m_statusLbl->setFrameStyle(QFrame::Panel | QFrame::Sunken);
     m_statusLbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -198,9 +191,7 @@ void MainWindow::updateCondLabel()
     m_condLbl->setText(text);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Signal wiring
-// ─────────────────────────────────────────────────────────────────────────────
 
 void MainWindow::connectSignals()
 {
@@ -219,9 +210,7 @@ void MainWindow::connectSignals()
             this, [this](QListWidgetItem*){ onEditPoint(); });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Slots – point management
-// ─────────────────────────────────────────────────────────────────────────────
+// Slots - point management
 
 void MainWindow::onAddPoint()
 {
@@ -258,7 +247,7 @@ void MainWindow::onEditPoint()
 
     ClickPoint& pt = m_config.points[row];
 
-    // ── Inline edit dialog ──────────────────────────────────────────────────
+    // Inline edit dialog
     QDialog dlg(this);
     dlg.setWindowTitle(QString("Edit Point %1").arg(row + 1));
     dlg.setFixedSize(300, 160);
@@ -347,9 +336,7 @@ void MainWindow::onMoveDown()
     m_pointList->setCurrentRow(row + 1);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Slots – engine
-// ─────────────────────────────────────────────────────────────────────────────
+// Slots - engine
 
 void MainWindow::onStartStop()
 {
@@ -397,9 +384,7 @@ void MainWindow::onStatusMessage(const QString& msg)
     m_statusLbl->setText(msg);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Settings dialog
-// ─────────────────────────────────────────────────────────────────────────────
 
 void MainWindow::onOpenSettings()
 {
@@ -409,7 +394,7 @@ void MainWindow::onOpenSettings()
 
     QVBoxLayout* vl = new QVBoxLayout(&dlg);
 
-    // ── Stop condition ───────────────────────────────────────────────────────
+    // Stop condition
     QGroupBox* stopGrp = new QGroupBox("Stop Condition", &dlg);
     QVBoxLayout* stopVl = new QVBoxLayout(stopGrp);
     QButtonGroup* stopBG = new QButtonGroup(&dlg);
@@ -462,7 +447,7 @@ void MainWindow::onOpenSettings()
     connect(rbTime,     &QRadioButton::toggled, this, [syncSpins](bool){ syncSpins(); });
     connect(rbCycles,   &QRadioButton::toggled, this, [syncSpins](bool){ syncSpins(); });
 
-    // ── Overlay ──────────────────────────────────────────────────────────────
+    // Overlay
     QGroupBox* overlayGrp = new QGroupBox("Overlay", &dlg);
     QVBoxLayout* overlayVl = new QVBoxLayout(overlayGrp);
     QCheckBox* hideOverlayCb = new QCheckBox(
@@ -475,7 +460,7 @@ void MainWindow::onOpenSettings()
     overlayVl->addWidget(hideOverlayCb);
     vl->addWidget(overlayGrp);
 
-    // ── Hotkey ───────────────────────────────────────────────────────────────
+    // Hotkey
     QGroupBox* hkGrp = new QGroupBox("Toggle Hotkey  (Start / Stop)", &dlg);
     QFormLayout* hkForm = new QFormLayout(hkGrp);
 
@@ -490,7 +475,7 @@ void MainWindow::onOpenSettings()
     hkForm->addRow("Key:", hkEdit);
     vl->addWidget(hkGrp);
 
-    // ── Buttons ──────────────────────────────────────────────────────────────
+    // Buttons
     QDialogButtonBox* bb =
         new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dlg);
     vl->addWidget(bb);
@@ -500,7 +485,7 @@ void MainWindow::onOpenSettings()
 
     if (dlg.exec() != QDialog::Accepted) return;
 
-    // ── Apply ─────────────────────────────────────────────────────────────────
+    // Apply settings
     if (rbInfinite->isChecked())  m_config.stopCondition = StopCondition::Indefinite;
     else if (rbTime->isChecked()) m_config.stopCondition = StopCondition::TimeLimit;
     else                          m_config.stopCondition = StopCondition::CycleCount;
@@ -528,9 +513,7 @@ void MainWindow::onOpenSettings()
     updateCondLabel();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 void MainWindow::refreshPointList()
 {
@@ -574,9 +557,7 @@ void MainWindow::setRunning(bool running)
         m_overlay->setActivePoint(-1);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Global hotkey (Windows)
-// ─────────────────────────────────────────────────────────────────────────────
 
 void MainWindow::registerHotkey()
 {
